@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess Playground</title>
+    
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+    
+    <!-- External CSS and JS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Top Navigation Bar -->
+    <div class="top-bar">
+        <div class="title">Chess Playground</div>
+        <div class="status" id="game-status">White to move</div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Board Section -->
+        <div class="board-section">
+            <div class="board-container">
+                <!-- Chess Board -->
+                <div class="chessboard" id="board"></div>
+                
+                <!-- Control Buttons -->
+                <div class="controls">
+                    <button class="btn" onclick="resetGame()">Reset Game</button>
+                    <button class="btn secondary" onclick="undoMove()">Undo Move</button>
+                    <button class="btn secondary" onclick="flipBoard()">Flip Board</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Side Panel -->
+        <div class="side-panel">
+            <div class="panel-header">Move History</div>
+            <div class="move-history" id="move-history">
+                <div style="color: #6a9955; font-style: italic;">// Game started - White to move</div>
+            </div>
+            
+            <div class="game-info">
+                <div class="info-item">
+                    <span class="info-label">Turn:</span>
+                    <span class="info-value" id="current-turn">White</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Moves:</span>
+                    <span class="info-value" id="move-count">0</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">FEN:</span>
+                    <span class="info-value" id="fen-display" style="font-size: 10px; word-break: break-all;">rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Checkmate Modal -->
+    <div class="modal-overlay" id="checkmate-modal">
+        <div class="modal">
+            <h2>🎉 Checkmate!</h2>
+            <p>The game has ended in checkmate.</p>
+            <div class="winner" id="winner-text"></div>
+            <div>
+                <button class="modal-btn" onclick="closeModal()">New Game</button>
+                <button class="modal-btn secondary" onclick="closeModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- External JavaScript -->
+    <script src="script.js"></script>
+</body>
+</html>
