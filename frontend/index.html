@@ -23,9 +23,21 @@
         <!-- Board Section -->
         <div class="board-section">
             <div class="board-container">
-                <!-- Chess Board -->
-                <div class="chessboard" id="board"></div>
-                
+                <div class="board-row">
+                    <!-- Left captured (by Black → white pieces) -->
+                    <div class="captured-col">
+                        <div class="captured-pieces" id="captured-black"></div>
+                    </div>
+
+                    <!-- Chess Board -->
+                    <div class="chessboard" id="board"></div>
+
+                    <!-- Right captured (by White → black pieces) -->
+                    <div class="captured-col">
+                        <div class="captured-pieces" id="captured-white"></div>
+                    </div>
+                </div>
+
                 <!-- Control Buttons -->
                 <div class="controls">
                     <button class="btn" onclick="resetGame()">Reset Game</button>

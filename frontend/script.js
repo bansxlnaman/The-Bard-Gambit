@@ -9,6 +9,8 @@ let game = new Chess();
 let selectedSquare = null;
 let flipped = false;
 let draggedPiece = null;
+let capturedByWhite = [];
+let capturedByBlack = [];
 
 // Create the chess board
 function createBoard() {
@@ -83,6 +85,7 @@ function handleSquareClick(squareId) {
         });
 
         if (move) {
+            trackCapture(move);
             updateDisplay();
             selectedSquare = null;
             clearHighlights();
@@ -138,6 +141,7 @@ function handleDrop(e, targetSquareId) {
     });
 
     if (move) {
+        trackCapture(move);
         updateDisplay();
     }
 
@@ -203,6 +207,7 @@ function updateDisplay() {
     fenDisplay.textContent = game.fen();
 
     updateMoveHistory();
+    updateCapturedUI();
 }
 
 // Update move history
@@ -245,12 +250,27 @@ function resetGame() {
     game.reset();
     selectedSquare = null;
     clearHighlights();
+    capturedByWhite = [];
+    capturedByBlack = [];
     updateDisplay();
 }
 
 function undoMove() {
     const move = game.undo();
     if (move !== null) {
+        // If the undone move was a capture, remove from captured arrays
+        if (move.captured) {
+            const wasCapturedByWhite = move.color === 'w';
+            const capturedPieceCode = (wasCapturedByWhite ? 'b' : 'w') + move.captured.toUpperCase();
+            if (wasCapturedByWhite) {
+                // White had captured a black piece; remove last matching
+                removeLastCaptured(capturedByWhite, capturedPieceCode);
+            } else {
+                // Black had captured a white piece
+                removeLastCaptured(capturedByBlack, capturedPieceCode);
+            }
+            updateCapturedUI();
+        }
         selectedSquare = null;
         clearHighlights();
         updateDisplay();
@@ -287,3 +307,55 @@ document.addEventListener('DOMContentLoaded', function() {
     createBoard();
     updateDisplay();
 });
+
+// Capture tracking helpers
+function trackCapture(move) {
+    if (move.captured) {
+        // The mover is move.color; the captured piece belongs to the opposite color
+        const capturedPieceCode = (move.color === 'w' ? 'b' : 'w') + move.captured.toUpperCase();
+        if (move.color === 'w') {
+            capturedByWhite.push(capturedPieceCode);
+        } else {
+            capturedByBlack.push(capturedPieceCode);
+        }
+        updateCapturedUI();
+    }
+}
+
+function removeLastCaptured(arr, pieceCode) {
+    for (let i = arr.length - 1; i >= 0; i--) {
+        if (arr[i] === pieceCode) {
+            arr.splice(i, 1);
+            return;
+        }
+    }
+}
+
+function updateCapturedUI() {
+    const whiteDiv = document.getElementById('captured-white');
+    const blackDiv = document.getElementById('captured-black');
+    if (!whiteDiv || !blackDiv) return;
+
+    whiteDiv.innerHTML = '';
+    blackDiv.innerHTML = '';
+
+    capturedByWhite.forEach(code => {
+        const el = document.createElement('div');
+        el.className = 'captured-piece';
+        const img = document.createElement('img');
+        img.src = pieceImages[code];
+        img.alt = code;
+        el.appendChild(img);
+        whiteDiv.appendChild(el);
+    });
+
+    capturedByBlack.forEach(code => {
+        const el = document.createElement('div');
+        el.className = 'captured-piece';
+        const img = document.createElement('img');
+        img.src = pieceImages[code];
+        img.alt = code;
+        el.appendChild(img);
+        blackDiv.appendChild(el);
+    });
+}
