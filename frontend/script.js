@@ -87,6 +87,7 @@ function handleSquareClick(squareId) {
         if (move) {
             trackCapture(move);
             updateDisplay();
+            sendStateToBackend(); // <-- here
             selectedSquare = null;
             clearHighlights();
         } else if (piece && piece.color === game.turn()) {
@@ -143,6 +144,7 @@ function handleDrop(e, targetSquareId) {
     if (move) {
         trackCapture(move);
         updateDisplay();
+        sendStateToBackend(); // <-- here
     }
 
     handleDragEnd();
@@ -230,7 +232,6 @@ function updateMoveHistory() {
             </div>
         `;
     }
-
     if (game.game_over()) {
         let result = '';
         if (game.in_checkmate()) {
@@ -358,4 +359,29 @@ function updateCapturedUI() {
         el.appendChild(img);
         blackDiv.appendChild(el);
     });
+}
+
+// New function to send game state to the backend
+async function sendStateToBackend() {
+    const fen = game.fen();
+    const pgn = game.history(); // Get history as an array of moves
+
+    try {
+        const response = await fetch('http://127.0.0.1:5001/api/save_game', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ fen, pgn }),
+        });        
+
+        if (!response.ok) {
+            console.error('Failed to save game state to backend.');
+        } else {
+            const result = await response.json();
+            console.log('Backend response:', result.message);
+        }
+    } catch (error) {
+        console.error('Error communicating with backend:', error);
+    }
 }
