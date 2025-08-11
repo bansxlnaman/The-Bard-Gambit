@@ -6,7 +6,7 @@
     <title>Chess Playground</title>
     
     <!-- External Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js" defer></script>
     
     <!-- External CSS and JS -->
     <link rel="stylesheet" href="style.css">
@@ -38,11 +38,37 @@
                     </div>
                 </div>
 
+                <!-- Clocks Row -->
+                <div class="clock-row">
+                    <div class="clock white">
+                        <div class="clock-label">White</div>
+                        <div class="clock-time" id="white-clock">05:00</div>
+                    </div>
+                    <div class="clock-controls">
+                        <input id="time-mmss-input" class="select-control" type="text" inputmode="numeric" placeholder="00:00" value="05:00" title="Time MM:SS" />
+                        <button class="btn secondary" id="toggle-clock-btn" type="button">Start Clock</button>
+                    </div>
+                    <div class="clock black">
+                        <div class="clock-label">Black</div>
+                        <div class="clock-time" id="black-clock">05:00</div>
+                    </div>
+                </div>
+
                 <!-- Control Buttons -->
                 <div class="controls">
                     <button class="btn" onclick="resetGame()">Reset Game</button>
                     <button class="btn secondary" onclick="undoMove()">Undo Move</button>
                     <button class="btn secondary" onclick="flipBoard()">Flip Board</button>
+
+                    <select id="theme-select" class="select-control" title="Select theme">
+                        <option value="" selected disabled>Select theme</option>
+                        <option value="medieval_kingdom">Medieval Kingdom</option>
+                        <option value="cosmic_battle">Cosmic Battle</option>
+                        <option value="noir_detective">Noir Detective</option>
+                        <option value="high_fantasy">High Fantasy</option>
+                        <option value="wild_west">Wild West</option>
+                    </select>
+                    <button class="btn" id="generate-story-btn" type="button">Generate Story</button>
                 </div>
             </div>
         </div>
@@ -50,24 +76,10 @@
         <!-- Side Panel -->
         <div class="side-panel">
             <div class="panel-header">Move History</div>
-            <div class="move-history" id="move-history">
-                <div style="color: #6a9955; font-style: italic;">// Game started - White to move</div>
-            </div>
-            
-            <div class="game-info">
-                <div class="info-item">
-                    <span class="info-label">Turn:</span>
-                    <span class="info-value" id="current-turn">White</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Moves:</span>
-                    <span class="info-value" id="move-count">0</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">FEN:</span>
-                    <span class="info-value" id="fen-display" style="font-size: 10px; word-break: break-all;">rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1</span>
-                </div>
-            </div>
+            <div class="move-history" id="move-history"></div>
+            <div class="panel-header" style="margin-top: 10px;">Story</div>
+            <div id="story-box" class="story-box">
+                
         </div>
     </div>
 
@@ -85,6 +97,6 @@
     </div>
 
     <!-- External JavaScript -->
-    <script src="script.js"></script>
+    <script src="script.js?v=4" defer></script>
 </body>
 </html>

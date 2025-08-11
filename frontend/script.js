@@ -1,3 +1,20 @@
+console.log('[Init] script.js loaded');
+// Configure API base for hosting/local dev.
+// Priority: window.API_BASE → if on a different port than 5001, default to 5001 → same-origin
+const API_BASE = (() => {
+    const custom = (window.API_BASE || '').replace(/\/$/, '');
+    if (custom) return custom;
+    try {
+        const { protocol, hostname, port, origin } = window.location;
+        if (port && port !== '5001') {
+            return `${protocol}//${hostname}:5001`;
+        }
+        return origin;
+    } catch (_) {
+        return '';
+    }
+})();
+
 // Chess piece image mapping
 const pieceImages = {
     'wK': 'Images/wK.png', 'wQ': 'Images/wQ.png', 'wR': 'Images/wR.png', 'wB': 'Images/wB.png', 'wN': 'Images/wN.png', 'wP': 'Images/wP.png',
@@ -5,12 +22,20 @@ const pieceImages = {
 };
 
 // Initialize chess game
-let game = new Chess();
+let game = null;
 let selectedSquare = null;
 let flipped = false;
 let draggedPiece = null;
 let capturedByWhite = [];
 let capturedByBlack = [];
+
+// Chess clock state
+let whiteMsRemaining = 5 * 60 * 1000;
+let blackMsRemaining = 5 * 60 * 1000;
+let activeColor = 'w';
+let clockRunning = false;
+let lastTickTs = null;
+let tickHandle = null;
 
 // Create the chess board
 function createBoard() {
@@ -67,6 +92,9 @@ function updateBoard() {
 
 // Handle square click
 function handleSquareClick(squareId) {
+    if (!clockRunning) {
+        return;
+    }
     if (selectedSquare === squareId) {
         // Deselect if clicking same square
         selectedSquare = null;
@@ -86,6 +114,7 @@ function handleSquareClick(squareId) {
 
         if (move) {
             trackCapture(move);
+            onMoveCompleted(move);
             updateDisplay();
             selectedSquare = null;
             clearHighlights();
@@ -106,7 +135,7 @@ function handleSquareClick(squareId) {
 // Handle drag start
 function handleDragStart(e, squareId) {
     const piece = game.get(squareId);
-    if (!piece || piece.color !== game.turn()) {
+    if (!clockRunning || !piece || piece.color !== game.turn()) {
         e.preventDefault();
         return;
     }
@@ -131,7 +160,8 @@ function handleDragEnd() {
 // Handle drop
 function handleDrop(e, targetSquareId) {
     e.preventDefault();
-    
+    if (!clockRunning) return;
+
     if (!draggedPiece) return;
 
     const move = game.move({
@@ -142,6 +172,7 @@ function handleDrop(e, targetSquareId) {
 
     if (move) {
         trackCapture(move);
+        onMoveCompleted(move);
         updateDisplay();
     }
 
@@ -201,13 +232,14 @@ function updateDisplay() {
         statusText = (game.turn() === 'w' ? 'White' : 'Black') + ' to move';
     }
 
-    status.textContent = statusText;
-    currentTurn.textContent = game.turn() === 'w' ? 'White' : 'Black';
-    moveCount.textContent = Math.floor(game.history().length);
-    fenDisplay.textContent = game.fen();
+    if (status) status.textContent = statusText;
+    if (currentTurn) currentTurn.textContent = game.turn() === 'w' ? 'White' : 'Black';
+    if (moveCount) moveCount.textContent = Math.floor(game.history().length);
+    if (fenDisplay) fenDisplay.textContent = game.fen();
 
     updateMoveHistory();
     updateCapturedUI();
+    updateClocksUI();
 }
 
 // Update move history
@@ -252,6 +284,19 @@ function resetGame() {
     capturedByWhite = [];
     capturedByBlack = [];
     updateDisplay();
+    // Clear story box on reset
+    updateStoryBox('');
+    try { localStorage.removeItem('lastStory'); } catch (_) {}
+    // Reset clocks
+    pauseClock();
+    const tInput = document.getElementById('time-mmss-input');
+    const { minutes, seconds } = parseMmSs((tInput && tInput.value) || '05:00');
+    whiteMsRemaining = (minutes * 60 + seconds) * 1000;
+    blackMsRemaining = (minutes * 60 + seconds) * 1000;
+    activeColor = 'w';
+    updateClocksUI();
+    const toggleBtn = document.getElementById('toggle-clock-btn');
+    if (toggleBtn) toggleBtn.textContent = 'Start Clock';
 }
 
 function undoMove() {
@@ -359,43 +404,245 @@ function updateCapturedUI() {
     });
 }
 
-async function fetchNarrative(gameId) {
-    // The backend is running on port 5000
-    const apiUrl = `http://127.0.0.1:5001/narrate/${gameId}`;
-    
-    console.log(`Fetching narrative for ${gameId} from ${apiUrl}`);
+async function generateStoryFromCurrentPosition() {
+    console.log('[Story] Generate clicked');
+    // Assemble a simple PGN from the current move history
+    // Use chess.js' built-in exporter for correctness
+    const pgn = game.pgn({ max_width: 80, newline_char: ' ' });
+    if (!pgn || pgn.trim().length === 0) {
+        updateStoryBox('// No moves yet. Play a few moves before generating a story.');
+        return;
+    }
+
+    const themeSelect = document.getElementById('theme-select');
+    let selectedTheme = 'medieval_kingdom';
+    if (themeSelect && themeSelect.value) {
+        selectedTheme = themeSelect.value;
+    } else {
+        // If not selected, default to medieval_kingdom but inform user
+        console.warn('[Story] No theme selected, defaulting to medieval_kingdom');
+    }
+
+    // POST to backend using the expected route /narrate/current_game/<theme>
+    const apiUrl = `${API_BASE}/narrate/current_game/${encodeURIComponent(selectedTheme)}`;
+    const payload = {
+        eventName: 'User Game',
+        whitePlayer: 'White',
+        blackPlayer: 'Black',
+        pgn: pgn.trim()
+    };
+
+    updateStoryBox('// Generating story...');
+    // Disable button and prevent page refresh while generating
+    const genBtn = document.getElementById('generate-story-btn');
+    if (genBtn) genBtn.disabled = true;
+    const beforeUnloadGuard = (e) => {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+    };
+    window.addEventListener('beforeunload', beforeUnloadGuard);
+
+    // Setup a fetch timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
 
     try {
-        const response = await fetch(apiUrl);
+        console.log('[Story] POST', apiUrl, payload);
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            cache: 'no-store',
+            signal: controller.signal,
+            mode: 'cors',
+        });
+
+        const contentType = response.headers.get('content-type') || '';
+        let data;
+        if (contentType.includes('application/json')) {
+            data = await response.json();
+        } else {
+            const text = await response.text();
+            throw new Error(`Unexpected response: ${text.slice(0, 200)}`);
+        }
+        console.log('[Story] Response', response.status, data);
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Network response was not ok');
-        }
-        const narrativeData = await response.json();
-        
-        console.log("Successfully received narrative:", narrativeData);
-        
-        // You now have the full story. You can use it to populate your UI.
-        // For example, let's just log the description of the first move.
-        if (narrativeData.length > 0) {
-            console.log("First move description:", narrativeData[0].description);
+            throw new Error(data.error || 'Failed to generate story');
         }
 
-        return narrativeData;
+        if (data && data.story) {
+            updateStoryBox(data.story);
+        } else {
+            updateStoryBox('// No story returned.');
+        }
+        // Focus the story box so accidental keypress doesn't reset UI
+        const sb = document.getElementById('story-box');
+        if (sb) sb.focus && sb.focus();
+    } catch (err) {
+        console.error(err);
+        updateStoryBox(`// Error: ${err.message}`);
+    } finally {
+        clearTimeout(timeoutId);
+        window.removeEventListener('beforeunload', beforeUnloadGuard);
+        if (genBtn) genBtn.disabled = false;
+    }
+}
 
-    } catch (error) {
-        console.error('There was a problem fetching the narrative:', error);
-        // You could display this error to the user in the UI
+function updateStoryBox(text) {
+    const box = document.getElementById('story-box');
+    if (box) {
+        box.textContent = text;
+        box.scrollTop = box.scrollHeight;
     }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Let's automatically fetch the Opera Game when the page loads
-    fetchNarrative('opera_game').then(story => {
-        if (story) {
-            // Now you can build your UI with the 'story' array
-            // e.g., create a "Next Move" button that iterates through the array,
-            // updating the board and displaying the description.
-        }
+    console.log('[Init] DOMContentLoaded');
+    if (typeof Chess === 'undefined') {
+        console.error('Chess.js not loaded');
+        updateStoryBox('// Error: chess.js failed to load.');
+        return;
+    }
+    game = new Chess();
+
+    createBoard();
+    updateDisplay();
+
+    // Prevent any accidental form submissions from reloading the page
+    document.addEventListener('submit', (e) => {
+        console.log('[Guard] Prevented form submit');
+        e.preventDefault();
     });
+
+    const genBtn = document.getElementById('generate-story-btn');
+    if (genBtn) {
+        genBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('[Story] Button clicked');
+            generateStoryFromCurrentPosition();
+        });
+    } else {
+        console.warn('[Init] Generate button not found');
+    }
+
+    // Time control select and clock toggle
+    const timeInput = document.getElementById('time-mmss-input');
+    if (timeInput) {
+        const applyTime = () => {
+            const val = (timeInput.value || '').trim();
+            const { minutes, seconds } = parseMmSs(val || '05:00');
+            whiteMsRemaining = (minutes * 60 + seconds) * 1000;
+            blackMsRemaining = (minutes * 60 + seconds) * 1000;
+            activeColor = 'w';
+            pauseClock();
+            updateClocksUI();
+            const toggleBtn = document.getElementById('toggle-clock-btn');
+            if (toggleBtn) toggleBtn.textContent = 'Start Clock';
+        };
+        timeInput.addEventListener('change', applyTime);
+        timeInput.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') applyTime();
+        });
+        timeInput.addEventListener('blur', () => {
+            // Normalize formatting to MM:SS
+            const { minutes, seconds } = parseMmSs(timeInput.value || '05:00');
+            timeInput.value = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        });
+    }
+
+    const toggleBtn = document.getElementById('toggle-clock-btn');
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+            if (!clockRunning) {
+                startClock();
+                toggleBtn.textContent = 'Pause Clock';
+            } else {
+                pauseClock();
+                toggleBtn.textContent = 'Start Clock';
+            }
+        });
+    }
+
+    // Initialize clocks UI on load
+    updateClocksUI();
 });
+
+window.addEventListener('beforeunload', () => {
+    console.log('[Lifecycle] beforeunload');
+});
+
+document.addEventListener('visibilitychange', () => {
+    console.log('[Lifecycle] visibilitychange', document.visibilityState);
+});
+
+// Ensure global access for inline onclick
+window.generateStoryFromCurrentPosition = generateStoryFromCurrentPosition;
+
+// --- Chess clock helpers ---
+function startClock() {
+    if (clockRunning) return;
+    clockRunning = true;
+    lastTickTs = performance.now();
+    tickHandle = setInterval(clockTick, 100);
+}
+
+function pauseClock() {
+    if (!clockRunning) return;
+    clockRunning = false;
+    if (tickHandle) clearInterval(tickHandle);
+    tickHandle = null;
+}
+
+function clockTick() {
+    if (!clockRunning) return;
+    const now = performance.now();
+    const delta = now - (lastTickTs || now);
+    lastTickTs = now;
+    if (activeColor === 'w') {
+        whiteMsRemaining = Math.max(0, whiteMsRemaining - delta);
+    } else {
+        blackMsRemaining = Math.max(0, blackMsRemaining - delta);
+    }
+    updateClocksUI();
+    if (whiteMsRemaining === 0 || blackMsRemaining === 0) {
+        pauseClock();
+    }
+}
+
+function onMoveCompleted(move) {
+    // Switch side to move
+    activeColor = (activeColor === 'w') ? 'b' : 'w';
+    updateClocksUI();
+}
+
+function updateClocksUI() {
+    const whiteEl = document.getElementById('white-clock');
+    const blackEl = document.getElementById('black-clock');
+    if (whiteEl) whiteEl.textContent = formatMs(whiteMsRemaining);
+    if (blackEl) blackEl.textContent = formatMs(blackMsRemaining);
+}
+
+function formatMs(ms) {
+    const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+function parseMmSs(value) {
+    // Accept formats: MM:SS, M:SS, MM, M, or seconds only
+    const v = (value || '').replace(/\s+/g, '');
+    if (v.includes(':')) {
+        const [m, s] = v.split(':');
+        const minutes = Math.max(0, parseInt(m || '0', 10) || 0);
+        const seconds = Math.max(0, Math.min(59, parseInt(s || '0', 10) || 0));
+        return { minutes, seconds };
+    }
+    const n = Math.max(0, parseInt(v || '0', 10) || 0);
+    if (n >= 60) {
+        return { minutes: Math.floor(n / 60), seconds: n % 60 };
+    }
+    return { minutes: n, seconds: 0 };
+}

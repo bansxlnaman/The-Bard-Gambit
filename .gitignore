@@ -1,0 +1,13 @@
+# Python virtual environment
+venv/
+
+# Python cache files
+__pycache__/
+*.pyc
+
+# Local configuration and secrets
+src/config.py
+
+# Stockfish engine binary (optional but recommended)
+stockfish_engine/
+stockfish-macos-*
