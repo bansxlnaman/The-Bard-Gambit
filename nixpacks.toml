@@ -1,0 +1,11 @@
+# This tells Railway's build system what to do
+
+[phases.setup]
+# A list of system packages to install using apt-get
+# This will install Stockfish globally on the server
+aptPkgs = ["stockfish"]
+
+[start]
+# This is the command to start your web server
+# It replaces the need for a Procfile
+cmd = "gunicorn backend.main:app"
