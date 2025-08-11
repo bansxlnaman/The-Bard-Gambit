@@ -21,7 +21,7 @@ try:
     else:
         raise Exception(f"Unsupported OS: {system}")
         
-    STOCKFISH_PATH = os.path.join(project_root, 'backend', 'stockfish', stockfish_filename)
+    STOCKFISH_PATH = os.path.join(project_root,'stockfish', stockfish_filename)
     
     if not os.path.exists(STOCKFISH_PATH):
         raise FileNotFoundError(f"Stockfish executable not found at: {STOCKFISH_PATH}")

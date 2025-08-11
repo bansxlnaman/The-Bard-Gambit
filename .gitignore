@@ -9,5 +9,3 @@ __pycache__/
 src/config.py
 
 .DS_Store
-
-stockfish/
