@@ -3,13 +3,38 @@ import chess.pgn
 import json
 import io
 import os
+import platform
 import google.generativeai as genai
 from stockfish import Stockfish
 
 # --- Configuration ---
 from .config import KEY 
-STOCKFISH_PATH = "/Users/namanbansal/Developer/The Bard's Gambit/bards_gambit/stockfish_engine/stockfish-macos-m1-apple-silicon" # Adjust if your path is different
-PROMPTS_PATH = "/Users/namanbansal/Developer/The Bard's Gambit/bards_gambit/src/prompts.json"
+# --- Dynamic Stockfish Path ---
+try:
+    # Get the absolute path to the directory containing this script (src)
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    # Get the project's root directory (BARDS_GAMBIT)
+    project_root = os.path.dirname(script_dir)
+    
+    system = platform.system()
+    if system == "Darwin": # macOS
+        stockfish_filename = "stockfish-mac"
+    elif system == "Linux":
+        stockfish_filename = "stockfish-linux"
+    else:
+        raise Exception(f"Unsupported OS: {system}")
+        
+    STOCKFISH_PATH = os.path.join(project_root, 'stockfish', stockfish_filename)
+    
+    # Verify that the file actually exists before proceeding
+    if not os.path.exists(STOCKFISH_PATH):
+        raise FileNotFoundError(f"Stockfish executable not found at: {STOCKFISH_PATH}")
+
+except Exception as e:
+    print(f"Error setting up Stockfish path: {e}")
+    STOCKFISH_PATH = None # Set to None to prevent the app from crashing if path fails
+
+PROMPTS_PATH = os.path.join(os.path.dirname(__file__), 'prompts.json')
 
 # Configure the API clients
 genai.configure(api_key=KEY)
@@ -18,6 +43,7 @@ class GeminiNarrativeEngine:
     def __init__(self, theme_name="medieval_kingdom"):
         """Initializes the engine with a theme, Stockfish, and Gemini models."""
         self.stockfish = Stockfish(path=STOCKFISH_PATH, depth=15, parameters={"Threads": 2, "Hash": 512})
+        
         self.gemini_model = genai.GenerativeModel('gemini-1.5-flash')
         
         with open(PROMPTS_PATH, 'r') as f:
