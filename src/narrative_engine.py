@@ -8,11 +8,18 @@ import google.generativeai as genai
 from stockfish import Stockfish
 
 # --- Configuration ---
-from .config import KEY 
+#from .config import KEY 
 PROMPTS_PATH = os.path.join(os.path.dirname(__file__), 'prompts.json')
 
 # Configure the API clients
-genai.configure(api_key=KEY)
+try:
+    # This now matches what you set in the Render dashboard
+    API_KEY = os.environ.get("KEY") 
+    if not API_KEY:
+        raise ValueError("Environment variable 'KEY' is not set.")
+    genai.configure(api_key=API_KEY)
+except Exception as e:
+    print(f"Error configuring Gemini API: {e}")
 
 class GeminiNarrativeEngine:
     def __init__(self, theme_name="medieval_kingdom"):
