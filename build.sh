@@ -3,7 +3,7 @@
 set -o errexit
 
 # 1. Make our local Linux Stockfish binary executable
-chmod +x backend/stockfish/stockfish-linux
+chmod +x stockfish/stockfish-linux
 
 # 2. Install Python dependencies
 pip install -r requirements.txt
