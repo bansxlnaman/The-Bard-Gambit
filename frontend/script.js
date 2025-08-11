@@ -1,19 +1,3 @@
-console.log('[Init] script.js loaded');
-// Configure API base for hosting/local dev.
-// Priority: window.API_BASE → if on a different port than 5001, default to 5001 → same-origin
-const API_BASE = (() => {
-    const custom = (window.API_BASE || '').replace(/\/$/, '');
-    if (custom) return custom;
-    try {
-        const { protocol, hostname, port, origin } = window.location;
-        if (port && port !== '5001') {
-            return `${protocol}//${hostname}:5001`;
-        }
-        return origin;
-    } catch (_) {
-        return '';
-    }
-})();
 
 // Chess piece image mapping
 const pieceImages = {
@@ -424,7 +408,7 @@ async function generateStoryFromCurrentPosition() {
     }
 
     // POST to backend using the expected route /narrate/current_game/<theme>
-    const apiUrl = `${API_BASE}/narrate/current_game/${encodeURIComponent(selectedTheme)}`;
+    const apiUrl = `https://bards-gambit-api.onrender.com/narrate/current_game/${encodeURIComponent(selectedTheme)}`;
     const payload = {
         eventName: 'User Game',
         whitePlayer: 'White',
