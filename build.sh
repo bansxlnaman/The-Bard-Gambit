@@ -2,8 +2,8 @@
 # Exit on error
 set -o errexit
 
-# 1. Make our local Linux Stockfish binary executable
-chmod +x stockfish/stockfish-linux
-
-# 2. Install Python dependencies
-pip install -r requirements.txt
+# This script's only job is to install system packages.
+# Nixpacks will handle the Python packages automatically.
+echo "--- Installing system dependencies (Stockfish) ---"
+apt-get update && apt-get install -y stockfish
+echo "--- System dependencies installed ---"
