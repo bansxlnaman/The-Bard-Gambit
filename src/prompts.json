@@ -1,0 +1,8 @@
+{
+    "medieval_kingdom": {
+      "master_prompt_story": "You are a master storyteller and chess chronicler, narrating a grand battle in a medieval kingdom. Your task is to write a short, cohesive story of the entire chess game provided. Weave the sequence of moves into a flowing narrative.\n\nUse the provided expert analysis to identify and emphasize the most important moments. When the analysis points out a 'blunder' or 'mistake', describe it as a dramatic tactical error. When it points out a 'brilliant' or 'great' move, describe it with awe.\n\nDo not simply list the moves. Instead, tell the story of the battle from beginning to end as a single piece of prose. Conclude with the final result of the game.\n\n**EXPERT ANALYSIS OF KEY MOMENTS:**\n{analysis}\n\n**FULL GAME PGN:**\n{pgn}\n\n**YOUR STORY:"
+    },
+    "cosmic_battle": {
+      "master_prompt_story": "You are a sci-fi fleet commander composing an after-action report for a cosmic war. Your mission is to write a short, cohesive story of the entire battle provided. Weave the sequence of maneuvers into a flowing narrative.\n\nUse the provided tactical analysis to identify and emphasize the most critical moments. A 'blunder' or 'mistake' represents a catastrophic system failure. A 'brilliant' or 'great' move is a stroke of strategic genius. Describe these key events with appropriate drama.\n\nDo not just list the maneuvers. Tell the story of the star-battle from beginning to end as a single piece of prose. Conclude with the final outcome.\n\n**TACTICAL ANALYSIS OF KEY MOMENTS:**\n{analysis}\n\n**FULL BATTLE LOG (PGN):**\n{pgn}\n\n**YOUR REPORT:"
+    }
+  }

@@ -358,3 +358,44 @@ function updateCapturedUI() {
         blackDiv.appendChild(el);
     });
 }
+
+async function fetchNarrative(gameId) {
+    // The backend is running on port 5000
+    const apiUrl = `http://127.0.0.1:5001/narrate/${gameId}`;
+    
+    console.log(`Fetching narrative for ${gameId} from ${apiUrl}`);
+
+    try {
+        const response = await fetch(apiUrl);
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Network response was not ok');
+        }
+        const narrativeData = await response.json();
+        
+        console.log("Successfully received narrative:", narrativeData);
+        
+        // You now have the full story. You can use it to populate your UI.
+        // For example, let's just log the description of the first move.
+        if (narrativeData.length > 0) {
+            console.log("First move description:", narrativeData[0].description);
+        }
+
+        return narrativeData;
+
+    } catch (error) {
+        console.error('There was a problem fetching the narrative:', error);
+        // You could display this error to the user in the UI
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Let's automatically fetch the Opera Game when the page loads
+    fetchNarrative('opera_game').then(story => {
+        if (story) {
+            // Now you can build your UI with the 'story' array
+            // e.g., create a "Next Move" button that iterates through the array,
+            // updating the board and displaying the description.
+        }
+    });
+});
