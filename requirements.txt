@@ -4,3 +4,4 @@ stockfish
 google-generativeai
 python-chess
 gunicorn
+requests
