@@ -2,8 +2,8 @@
 # Exit on error
 set -o errexit
 
-# 1. Install system packages like Stockfish
-apt-get update && apt-get install -y stockfish
+# 1. Make our local Linux Stockfish binary executable
+chmod +x backend/stockfish/stockfish-linux
 
 # 2. Install Python dependencies
 pip install -r requirements.txt
