@@ -408,7 +408,8 @@ async function generateStoryFromCurrentPosition() {
     }
 
     // POST to backend using the expected route /narrate/current_game/<theme>
-    const apiUrl = `the-bard-gambit-production.up.railway.app/narrate/current_game/${encodeURIComponent(selectedTheme)}`;
+    // NEW, CORRECTED CODE
+    const apiUrl = `https://the-bard-gambit-production.up.railway.app/narrate/current_game/${themeId}`;
     const payload = {
         eventName: 'User Game',
         whitePlayer: 'White',
