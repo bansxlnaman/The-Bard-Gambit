@@ -15,14 +15,14 @@ try:
     system = platform.system()
     
     if system == "Darwin": # macOS
-        stockfish_filename = "stockfish-macos-x86-64" 
+        stockfish_filename = "stockfish-mac" 
     elif system == "Linux":
         stockfish_filename = "stockfish-linux"
     else:
         raise Exception(f"Unsupported OS: {system}")
         
     # This path points to the 'stockfish_engine' directory in your project root
-    STOCKFISH_PATH = os.path.join(project_root, 'stockfish_engine', stockfish_filename)
+    STOCKFISH_PATH = os.path.join(project_root, 'stockfish', stockfish_filename)
     
     if not os.path.exists(STOCKFISH_PATH):
         raise FileNotFoundError(f"Stockfish executable not found at: {STOCKFISH_PATH}")
