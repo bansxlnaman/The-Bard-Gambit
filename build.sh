@@ -2,8 +2,8 @@
 # Exit on error
 set -o errexit
 
-# This script's only job is to install system packages.
-# Nixpacks will handle the Python packages automatically.
-echo "--- Installing system dependencies (Stockfish) ---"
-apt-get update && apt-get install -y stockfish
-echo "--- System dependencies installed ---"
+# 1. Find our local Linux Stockfish binary and make it executable
+# This is the key command to fix the permission error.
+chmod +x stockfish_engine/stockfish-linux
+
+echo "--- Build complete: Stockfish is now executable ---"
