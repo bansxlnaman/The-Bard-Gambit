@@ -5,8 +5,8 @@ from flask_cors import CORS
 import json
 
 # --- Path Setup ---
-# This allows main.py to find and import files from the 'src' directory
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(PROJECT_ROOT)
 
 # --- Import the Gemini Engine ---
 # Make sure you are importing the correct, new class
@@ -24,8 +24,7 @@ CORS(
 
 # --- Load Game Data ---
 # Construct the correct path to your games file
-GAMES_FILE_PATH = os.path.join(os.path.dirname(app.instance_path), 'games', 'game_data.json')
-
+GAMES_FILE_PATH = os.path.join(PROJECT_ROOT, 'games', 'game_data.json')
 try:
     with open(GAMES_FILE_PATH, 'r') as f:
         games_data = {game['id']: game for game in json.load(f)}
