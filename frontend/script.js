@@ -388,7 +388,7 @@ function updateCapturedUI() {
     });
 }
 
-async function generateStoryFromCurrentPosition() {
+async function generateStoryFromCurrentPosition(themeId) {
     console.log('[Story] Generate clicked');
     // Assemble a simple PGN from the current move history
     // Use chess.js' built-in exporter for correctness
@@ -500,13 +500,19 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
     });
 
-    const genBtn = document.getElementById('generate-story-btn');
+    // Inside the DOMContentLoaded event listener...
+const genBtn = document.getElementById('generate-story-btn');
     if (genBtn) {
         genBtn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
             console.log('[Story] Button clicked');
-            generateStoryFromCurrentPosition();
+            
+            // Get the selected theme from the dropdown
+            const themeId = document.getElementById('theme-select').value;
+            
+            // Pass the themeId to the function
+            generateStoryFromCurrentPosition(themeId); 
         });
     } else {
         console.warn('[Init] Generate button not found');
